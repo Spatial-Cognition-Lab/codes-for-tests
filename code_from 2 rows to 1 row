@@ -1,0 +1,25 @@
+library(readxl)
+library(dplyr)
+
+# Importa il file Excel
+data <- read_excel("C:\\Users\\sofia\\OneDrive\\Desktop\\documenti finali piloti\\DATASET FINALE\\EXCEL_DATASET FINAL.xlsx")
+
+# Definizione delle colonne statiche
+columns_static <- c("job", "order", "sex", "age")
+
+# Separare i dati static e rotation
+data_static <- data %>% filter(Cond == "static") %>% select(Subject, all_of(columns_static), everything(), -Cond)
+data_rotation <- data %>% filter(Cond == "rotation") %>% select(Subject, everything(), -Cond, -all_of(columns_static))
+
+# Aggiungi suffissi per differenziare le colonne di static e rotation
+colnames(data_static)[!(colnames(data_static) %in% c("Subject", columns_static))] <- 
+  paste0(colnames(data_static)[!(colnames(data_static) %in% c("Subject", columns_static))], "_static")
+
+colnames(data_rotation)[!(colnames(data_rotation) %in% "Subject")] <- 
+  paste0(colnames(data_rotation)[!(colnames(data_rotation) %in% "Subject")], "_rotation")
+
+# Unisci i due dataset sulla base del soggetto ("Subject")
+data_combined <- full_join(data_static, data_rotation, by = "Subject")
+
+# Salva il risultato in un nuovo file Excel
+write.csv(data_combined, "C:\\Users\\sofia\\OneDrive\\Desktop\\documenti finali piloti\\DATASET FINALE\\EXCEL_DATASET_TRANSFORMED.csv", row.names = FALSE)
