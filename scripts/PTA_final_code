@@ -1,108 +1,147 @@
-# Specifica la cartella dove sono memorizzati i risultati
-path.1 <- "C:\\Users\\sofia\\OneDrive\\Desktop\\documenti finali piloti\\pta_alessandro\\Pta"
+# Specify folder where results are stored
+path.1 <- "C:/Users/sofia/OneDrive/Desktop/documenti finali piloti/pta_alessandro/Pta"
 setwd(path.1)
 files.1 <- list.files(path.1, pattern = "\\.csv")
 
-# Pre-alloca il data frame con lo stesso numero di righe dei file
-PTA.results <- data.frame(Subject = character(length = length(files.1)),
-                          Cond = character(length = length(files.1)),
-                          PTA_DEV = numeric(length = length(files.1)),
-                          PTA_ACC = numeric(length = length(files.1)),
-                          PTA_RT = numeric(length = length(files.1)),
-                          Back_score = numeric(length = length(files.1)),
-                          Front_score = numeric(length = length(files.1)),
-                          front_left_score = numeric(length = length(files.1)),
-                          front_right_score = numeric(length = length(files.1)),
-                          back_right_score = numeric(length = length(files.1)),
-                          back_left_score = numeric(length = length(files.1)),
-                          Back_RT = numeric(length = length(files.1)),       # Nuova colonna per RT Back
-                          Front_RT = numeric(length = length(files.1)),     # Nuova colonna per RT Front
-                          front_left_RT = numeric(length = length(files.1)), # Nuova colonna per RT front left
-                          front_right_RT = numeric(length = length(files.1)),# Nuova colonna per RT front right
-                          back_right_RT = numeric(length = length(files.1)), # Nuova colonna per RT back right
-                          back_left_RT = numeric(length = length(files.1)),  # Nuova colonna per RT back left
-                          Correct_percentage = numeric(length = length(files.1)),  # Aggiunta la colonna per la percentuale
-                          stringsAsFactors = FALSE)
+# Initialize results dataframe
+PTA.results <- data.frame(
+  Subject = character(),
+  Cond = character(),
+  PTA_DEV = numeric(),
+  PTA_ACC = numeric(),
+  PTA_RT = numeric(),
+  PTA_correct_percentage = numeric(),
+  Front_PTA_DEV = numeric(),
+  Front_PTA_ACC = numeric(),
+  Front_PTA_RT = numeric(),
+  Front_PTA_correct_percentage = numeric(),
+  Back_PTA_DEV = numeric(),
+  Back_PTA_ACC = numeric(),
+  Back_PTA_RT = numeric(),
+  Back_PTA_correct_percentage = numeric(),
+  front_right_PTA_DEV = numeric(),
+  front_right_PTA_ACC = numeric(),
+  front_right_PTA_RT = numeric(),
+  front_right_PTA_correct_percentage = numeric(),
+  front_left_PTA_DEV = numeric(),
+  front_left_PTA_ACC = numeric(),
+  front_left_PTA_RT = numeric(),
+  front_left_PTA_correct_percentage = numeric(),
+  back_right_PTA_DEV = numeric(),
+  back_right_PTA_ACC = numeric(),
+  back_right_PTA_RT = numeric(),
+  back_right_PTA_correct_percentage = numeric(),
+  back_left_PTA_DEV = numeric(),
+  back_left_PTA_ACC = numeric(),
+  back_left_PTA_RT = numeric(),
+  back_left_PTA_correct_percentage = numeric(),
+  stringsAsFactors = FALSE
+)
 
-# Ciclo sui file e estrazione dei dati
+# Define the categories for V5
+categories <- list(
+  Front = c(45, 315),
+  Back = c(135, 225),
+  front_right = c(45),
+  front_left = c(315),
+  back_right = c(135),
+  back_left = c(225)
+)
+
+# Loop through files
 for (i in 1:length(files.1)) {
   fname <- files.1[i]
-  d <- read.csv2(fname, header = FALSE)
-  
+  d <- read.csv2(fname, header = F)
   if (ncol(d) == 1) {
-    d <- read.csv(fname, header = FALSE)
+    d <- read.csv(fname, header = F)
   }
   
-  # Verifica che il dataset abbia almeno 23 righe
-  if (nrow(d) >= 23) {
-    d1 <- d[8:23, ]
-    
-    ptadev <- mean(as.numeric(d1$V7), na.rm = TRUE)
-    
-    # Filtra i valori per PTA_ACC
-    d1 <- d1[as.numeric(d1$V9) < 20 & as.numeric(d1$V9) > 0.5, ]
-    ptacc <- mean(as.numeric(d1$V10), na.rm = TRUE)
-    
-    # Filtra per PTA_RT
-    d1 <- d1[as.numeric(d1$V7) == 0, ]
-    m <- mean(na.omit(as.numeric(d1$V9)))
-    sd <- sd(na.omit(as.numeric(d1$V9)))
+  d1 <- d[8:23, ]
+  
+  # Apply the filter for PTA_ACC to all calculations
+  d1_filtered <- subset(d1, as.numeric(d1$V9) < 20 & as.numeric(d1$V9) > 0.5)
+  
+  # Calculate general results
+  ptadev <- mean(as.numeric(d1_filtered$V7))
+  ptacc <- mean(as.numeric(d1_filtered$V10))
+  
+  d1_rt <- subset(d1_filtered, as.numeric(d1_filtered$V7) == 0)
+  m <- mean(na.omit(as.numeric(d1_rt$V9)))
+  sd <- sd(na.omit(as.numeric(d1_rt$V9)))
+  
+  if (!is.na(sd) && sd == 0) {
+    PTA.rt <- m * 1000
+  } else {
     cut <- m + (2.5 * sd)
-    PTA.rt <- mean(as.numeric(d1$V9)[as.numeric(d1$V9) < cut], na.rm = TRUE)
-    
-    # Calcolo dei punteggi per direzioni includendo tutte le risposte (V7 != 0 ammesso)
-    d1 <- d[8:23, ]  # Riporta d1 a tutte le righe, non solo con V7 == 0
-    front <- as.numeric(d1$V10[d1$V5 == 45 | d1$V5 == 315])
-    back <- as.numeric(d1$V10[d1$V5 == 135 | d1$V5 == 225])
-    frontright <- as.numeric(d1$V10[d1$V5 == 45])
-    frontleft <- as.numeric(d1$V10[d1$V5 == 315])
-    backright <- as.numeric(d1$V10[d1$V5 == 135])
-    backleft <- as.numeric(d1$V10[d1$V5 == 225])
-    
-    front_rt <- as.numeric(d1$V9[d1$V5 == 45 | d1$V5 == 315])
-    back_rt <- as.numeric(d1$V9[d1$V5 == 135 | d1$V5 == 225])
-    frontright_rt <- as.numeric(d1$V9[d1$V5 == 45])
-    frontleft_rt <- as.numeric(d1$V9[d1$V5 == 315])
-    backright_rt <- as.numeric(d1$V9[d1$V5 == 135])
-    backleft_rt <- as.numeric(d1$V9[d1$V5 == 225])
-    
-    # Calcola le medie e assegna ai rispettivi posti nel data frame pre-allocato
-    PTA.results$Back_score[i] <- mean(back, na.rm = TRUE)
-    PTA.results$Front_score[i] <- mean(front, na.rm = TRUE)
-    PTA.results$front_left_score[i] <- mean(frontleft, na.rm = TRUE)
-    PTA.results$front_right_score[i] <- mean(frontright, na.rm = TRUE)
-    PTA.results$back_right_score[i] <- mean(backright, na.rm = TRUE)
-    PTA.results$back_left_score[i] <- mean(backleft, na.rm = TRUE)
-    
-    PTA.results$Back_RT[i] <- mean(back_rt, na.rm = TRUE)
-    PTA.results$Front_RT[i] <- mean(front_rt, na.rm = TRUE)
-    PTA.results$front_left_RT[i] <- mean(frontleft_rt, na.rm = TRUE)
-    PTA.results$front_right_RT[i] <- mean(frontright_rt, na.rm = TRUE)
-    PTA.results$back_right_RT[i] <- mean(backright_rt, na.rm = TRUE)
-    PTA.results$back_left_RT[i] <- mean(backleft_rt, na.rm = TRUE)
-    
-    # Estrai il numero del soggetto e la condizione dal nome del file
-    parts <- strsplit(fname, "_")[[1]]
-    sub <- parts[1]
-    condition <- parts[2]
-    
-    # Aggiungi il soggetto e la condizione
-    PTA.results$Subject[i] <- sub
-    PTA.results$Cond[i] <- condition
-    
-    # Calcola PTA_DEV, PTA_ACC, e PTA_RT
-    PTA.results$PTA_DEV[i] <- ptadev
-    PTA.results$PTA_ACC[i] <- ptacc
-    PTA.results$PTA_RT[i] <- PTA.rt
-    
-    # Calcola la percentuale di risposte corrette (deviazione angolare = 0)
-    correct_items <- sum(as.numeric(d1$V7) == 0, na.rm = TRUE)  # Risposte corrette (deviazione angolare = 0)
-    total_items <- 16  # Numero totale di item
-    correct_percentage <- correct_items / total_items * 100  # Percentuale di risposte corrette
-    PTA.results$Correct_percentage[i] <- correct_percentage  # Salva la percentuale nel dataframe
+    PTA.rt <- mean(as.numeric(d1_rt$V9)[as.numeric(d1_rt$V9) < cut]) * 1000
   }
+  
+  total_responses <- nrow(d1_filtered)
+  correct_responses <- sum(as.numeric(d1_filtered$V7) == 0)
+  PTA_correct_percentage <- (correct_responses / total_responses) * 100
+  
+  # Extract subject number and condition from filename
+  parts <- strsplit(fname, "_")[[1]]
+  sub <- parts[1]
+  condition <- parts[2]
+  
+  # Initialize row for results
+  results_row <- data.frame(
+    Subject = sub,
+    Cond = condition,
+    PTA_DEV = ptadev,
+    PTA_ACC = ptacc,
+    PTA_RT = PTA.rt,
+    PTA_correct_percentage = PTA_correct_percentage,
+    stringsAsFactors = FALSE
+  )
+  
+  # Calculate results for each category
+  for (category in names(categories)) {
+    d1_category <- subset(d1_filtered, as.numeric(d1_filtered$V5) %in% categories[[category]])
+    
+    if (nrow(d1_category) > 0) {
+      # Calculate PTA_DEV
+      ptadev_cat <- mean(as.numeric(d1_category$V7))
+      
+      # Calculate PTA_ACC
+      ptacc_cat <- mean(as.numeric(d1_category$V10))
+      
+      # Calculate PTA_RT
+      d1_rt_cat <- subset(d1_category, as.numeric(d1_category$V7) == 0)
+      m_cat <- mean(na.omit(as.numeric(d1_rt_cat$V9)))
+      sd_cat <- sd(na.omit(as.numeric(d1_rt_cat$V9)))
+      
+      if (!is.na(sd_cat) && sd_cat == 0) {
+        PTA.rt_cat <- m_cat * 1000
+      } else {
+        cut_cat <- m_cat + (2.5 * sd_cat)
+        PTA.rt_cat <- mean(as.numeric(d1_rt_cat$V9)[as.numeric(d1_rt_cat$V9) < cut_cat]) * 1000
+      }
+      
+      # Calculate PTA_correct_percentage
+      total_responses_cat <- nrow(d1_category)
+      correct_responses_cat <- sum(as.numeric(d1_category$V7) == 0)
+      PTA_correct_percentage_cat <- (correct_responses_cat / total_responses_cat) * 100
+      
+      # Add category results to row
+      results_row[paste0(category, "_PTA_DEV")] <- ptadev_cat
+      results_row[paste0(category, "_PTA_ACC")] <- ptacc_cat
+      results_row[paste0(category, "_PTA_RT")] <- PTA.rt_cat
+      results_row[paste0(category, "_PTA_correct_percentage")] <- PTA_correct_percentage_cat
+    } else {
+      # Fill category results with NA if no data
+      results_row[paste0(category, "_PTA_DEV")] <- NA
+      results_row[paste0(category, "_PTA_ACC")] <- NA
+      results_row[paste0(category, "_PTA_RT")] <- NA
+      results_row[paste0(category, "_PTA_correct_percentage")] <- NA
+    }
+  }
+  
+  # Append the results row to the main dataframe
+  PTA.results <- rbind(PTA.results, results_row)
 }
 
-# Specifica la cartella dove salvare i risultati
-setwd("C:\\Users\\sofia\\OneDrive\\Desktop\\documenti finali piloti\\pta_alessandro\\Pta")
-write.table(PTA.results, "PTA_results.csv", sep = ',', row.names = FALSE)
+# Specify folder path where you'd like to save the results
+setwd("C:/Users/sofia/OneDrive/Desktop/documenti finali piloti/pta_alessandro")
+write.table(PTA.results, "PTA_results_with_categories.csv", sep = ',', row.names = F)
